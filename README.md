@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Stocky AI
 
-## Getting Started
+### AI-Powered Research Desk for Tokenized U.S. Equities
 
-First, run the development server:
+Stocky AI is an AI-powered market intelligence and research workspace designed for traders and investors who want to understand market conditions before making a decision.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Instead of automatically executing trades, Stocky AI combines live market information, financial news, historical price data, and large-language-model analysis into a compact research dashboard.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The final trading decision remains with the human.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Overview
 
-## Learn More
+Modern markets move quickly, but traders often need to combine information from multiple sources before making a decision.
 
-To learn more about Next.js, take a look at the following resources:
+Stocky AI brings that research workflow into one workspace.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+It allows users to:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Monitor market prices
+- Explore historical price movements
+- Track multiple equities
+- Read relevant financial news
+- Generate AI-powered market research
+- Review market intelligence and risk factors
+- Make informed decisions with a human-in-the-loop workflow
 
-## Deploy on Vercel
+Stocky AI is designed as a research desk, not an autonomous trading bot.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Core Concept
+
+```text
+Market Data
+     │
+     ├── Price History
+     ├── Market Overview
+     └── Financial News
+             │
+             ▼
+        Stocky AI
+             │
+             ▼
+       AI Analysis
+             │
+             ▼
+      Research Report
+             │
+             ▼
+       Human Decision

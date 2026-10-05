@@ -354,9 +354,7 @@ export default function Home() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
-            <span className="text-[11px] font-medium text-slate-600">
-              Workspace active
-            </span>
+  
             <a
               href="#research"
               className="ml-1 rounded-lg bg-[#142B52] px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-blue-800"
