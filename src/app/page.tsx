@@ -337,7 +337,7 @@ export default function Home() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-base font-extrabold tracking-tight">
-                  Stocky <span className="text-blue-600">AI</span>
+                  Stocky <span className="text-navy-600">AI</span>
                 </h1>
                 <span className="rounded-md border border-blue-100 bg-blue-50/80 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-blue-700">
                   RESEARCH DESK
