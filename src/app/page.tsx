@@ -103,7 +103,10 @@ function formatIndex(price: number) {
 }
 
 function formatPercent(value: number | null | undefined) {
-  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
@@ -112,7 +115,9 @@ function formatDateTime(value: string | null | undefined) {
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) return "Not available";
+  if (Number.isNaN(date.getTime())) {
+    return "Not available";
+  }
 
   return date.toLocaleString([], {
     month: "short",
@@ -133,7 +138,10 @@ function changeTone(value: number | null | undefined) {
 }
 
 function reportLines(answer: string) {
-  return answer.split("\n").map((line) => line.trim()).filter(Boolean);
+  return answer
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function SectionHeading({
@@ -177,23 +185,33 @@ function StatusDot({ active = true }: { active?: boolean }) {
 export default function Home() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
+
   const [analysisMeta, setAnalysisMeta] =
     useState<AnalysisResponse | null>(null);
+
   const [loading, setLoading] = useState(false);
 
   const [marketData, setMarketData] =
     useState<Record<string, MarketQuote>>({});
+
   const [marketLoading, setMarketLoading] = useState(true);
+
   const [marketUpdatedAt, setMarketUpdatedAt] =
     useState<string | null>(null);
+
   const [marketError, setMarketError] = useState("");
 
   const [news, setNews] = useState<NewsItem[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
+
   const [newsUpdatedAt, setNewsUpdatedAt] =
     useState<string | null>(null);
+
   const [newsError, setNewsError] = useState("");
-  const [failedNewsTickers, setFailedNewsTickers] = useState<string[]>([]);
+
+  const [failedNewsTickers, setFailedNewsTickers] =
+    useState<string[]>([]);
+
   const [copyMessage, setCopyMessage] = useState("");
 
   const loadMarketData = useCallback(async () => {
@@ -226,8 +244,15 @@ export default function Home() {
         }
       }
 
-      setMarketData((previous) => ({ ...previous, ...quotes }));
-      setMarketUpdatedAt(data.fetchedAt ?? new Date().toISOString());
+      setMarketData((previous) => ({
+        ...previous,
+        ...quotes,
+      }));
+
+      setMarketUpdatedAt(
+        data.fetchedAt ?? new Date().toISOString()
+      );
+
       setMarketError("");
     } catch {
       setMarketError(
@@ -249,7 +274,9 @@ export default function Home() {
       const data: NewsResponse = await response.json();
 
       if (!response.ok) {
-        throw new Error("The news service is temporarily unavailable.");
+        throw new Error(
+          "The news service is temporarily unavailable."
+        );
       }
 
       if (!Array.isArray(data.news)) {
@@ -278,7 +305,10 @@ export default function Home() {
       });
 
       setNews(validNews);
-      setNewsUpdatedAt(data.fetchedAt ?? new Date().toISOString());
+
+      setNewsUpdatedAt(
+        data.fetchedAt ?? new Date().toISOString()
+      );
 
       setFailedNewsTickers(
         Array.isArray(data.failedTickers)
@@ -321,7 +351,9 @@ export default function Home() {
   }, [loadMarketData, loadNews]);
 
   async function analyzeQuestion(nextQuestion?: string) {
-    const researchQuestion = (nextQuestion ?? question).trim();
+    const researchQuestion = (
+      nextQuestion ?? question
+    ).trim();
 
     if (!researchQuestion || loading) return;
 
@@ -345,7 +377,10 @@ export default function Home() {
       const data: AnalysisResponse = await response.json();
 
       if (!response.ok) {
-        setAnswer(data.error || "The research request failed.");
+        setAnswer(
+          data.error || "The research request failed."
+        );
+
         setAnalysisMeta(data);
         return;
       }
@@ -389,9 +424,11 @@ export default function Home() {
   const marketDirection = indexesAvailable
     ? typeof sp500.changePercent === "number" &&
       typeof nasdaq.changePercent === "number"
-      ? sp500.changePercent >= 0 && nasdaq.changePercent >= 0
+      ? sp500.changePercent >= 0 &&
+        nasdaq.changePercent >= 0
         ? "Positive"
-        : sp500.changePercent < 0 && nasdaq.changePercent < 0
+        : sp500.changePercent < 0 &&
+            nasdaq.changePercent < 0
           ? "Negative"
           : "Mixed"
       : "Unassessed"
@@ -399,7 +436,7 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#edf4f8] text-slate-950">
-      {/* Cooyor-style ambient background */}
+      {/* Ambient background */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -left-40 -top-32 h-[28rem] w-[28rem] rounded-full bg-sky-300/25 blur-3xl" />
         <div className="absolute -right-32 top-40 h-[30rem] w-[30rem] rounded-full bg-blue-300/20 blur-3xl" />
@@ -409,9 +446,14 @@ export default function Home() {
 
       <div className="relative mx-auto max-w-[1320px] px-3 py-4 sm:px-5 sm:py-6 lg:px-7">
         {/* HEADER */}
-        <header className={`${glassCard} flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5`}>
-          <a href="#" className="flex min-w-0 items-center gap-3">
-            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-2xl border border-white/80 bg-white/75 shadow-sm">
+        <header
+          className={`${glassCard} flex items-center justify-between gap-3 px-3 py-3 sm:px-5`}
+        >
+          <a
+            href="#"
+            className="flex min-w-0 items-center gap-2.5 sm:gap-3"
+          >
+            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-2xl border border-white/80 bg-white/75 shadow-sm sm:h-11 sm:w-11">
               <Image
                 src="/stocky-logo.jpg"
                 alt="Stocky AI logo"
@@ -423,40 +465,33 @@ export default function Home() {
             </div>
 
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-base font-extrabold tracking-tight text-slate-950">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <h1 className="text-sm font-extrabold tracking-tight text-slate-950 sm:text-base">
                   Stocky <span className="text-blue-700">AI</span>
                 </h1>
 
-                <span className="rounded-lg border border-blue-100/90 bg-blue-50/80 px-2 py-1 text-[8px] font-bold tracking-[0.12em] text-blue-700">
+                <span className="rounded-lg border border-blue-100/90 bg-blue-50/80 px-1.5 py-1 text-[7px] font-bold tracking-[0.1em] text-blue-700 sm:px-2 sm:text-[8px]">
                   RESEARCH DESK
                 </span>
               </div>
 
-              <p className="mt-0.5 text-[10px] text-slate-500">
+              <p className="mt-0.5 hidden text-[10px] text-slate-500 sm:block">
                 Simple, structured equity research
               </p>
             </div>
           </a>
 
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-2 rounded-full border border-white/80 bg-white/55 px-3 py-2 text-[9px] font-semibold text-slate-600">
-              <StatusDot active={!marketError} />
-              Research workspace
-            </span>
-
-            <a
-              href="#research"
-              className="rounded-xl bg-slate-950 px-3.5 py-2.5 text-[10px] font-semibold text-white shadow-sm transition hover:bg-slate-800"
-            >
-              Ask Stocky ↗
-            </a>
-          </div>
+          <a
+            href="#research"
+            className="shrink-0 rounded-xl bg-slate-950 px-3 py-2.5 text-[10px] font-semibold text-white shadow-sm transition hover:bg-slate-800 sm:px-4 sm:text-xs"
+          >
+            Ask Stocky <span aria-hidden="true">↗</span>
+          </a>
         </header>
 
         {/* HERO */}
-        <section className="mt-4 grid gap-4 lg:grid-cols-[1.45fr_0.85fr]">
-          <div className="relative overflow-hidden rounded-[30px] bg-slate-950/90 p-5 text-white shadow-[0_25px_70px_rgba(15,23,42,0.18)] sm:p-7 lg:p-8">
+        <section className="mt-4">
+          <div className="relative overflow-hidden rounded-[30px] bg-slate-950/90 p-5 text-white shadow-[0_25px_70px_rgba(15,23,42,0.18)] sm:p-7 lg:p-9">
             <div className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full border border-white/10" />
             <div className="pointer-events-none absolute -right-4 top-10 h-44 w-44 rounded-full border border-white/10" />
             <div className="pointer-events-none absolute -bottom-20 right-20 h-60 w-60 rounded-full bg-sky-400/15 blur-3xl" />
@@ -502,118 +537,17 @@ export default function Home() {
                   <StatusDot active />
                   Market monitoring
                 </span>
+
                 <span className="flex items-center gap-2">
                   <StatusDot active />
                   AI-assisted research
                 </span>
+
                 <span className="flex items-center gap-2">
                   <StatusDot active />
                   Human-led decisions
                 </span>
               </div>
-            </div>
-          </div>
-
-          {/* WORKSPACE STATUS */}
-          <div className={`${glassCard} p-4 sm:p-5`}>
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-blue-700">
-                  Workspace
-                </p>
-                <h3 className="mt-1 text-sm font-bold text-slate-900">
-                  System overview
-                </h3>
-              </div>
-
-              <span className="rounded-full border border-white bg-white/60 px-2.5 py-1.5 text-[9px] font-semibold text-slate-600">
-                Live status
-              </span>
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className={`${innerGlass} p-3.5`}>
-                <div className="flex items-center justify-between gap-1">
-                  <p className="text-[10px] text-slate-500">Market feed</p>
-                  <StatusDot active={!marketError && !(!marketLoading && !indexesAvailable)} />
-                </div>
-
-                <p className="mt-3 text-sm font-bold text-slate-900">
-                  {marketLoading
-                    ? "Updating"
-                    : indexesAvailable
-                      ? "Connected"
-                      : "Partial"}
-                </p>
-
-                <p className="mt-1 text-[9px] text-slate-400">
-                  Yahoo Finance
-                </p>
-              </div>
-
-              <div className={`${innerGlass} p-3.5`}>
-                <div className="flex items-center justify-between gap-1">
-                  <p className="text-[10px] text-slate-500">Financial news</p>
-                  <StatusDot active={news.length > 0} />
-                </div>
-
-                <p className="mt-3 text-sm font-bold text-slate-900">
-                  {newsLoading
-                    ? "Updating"
-                    : news.length > 0
-                      ? "Available"
-                      : "Unavailable"}
-                </p>
-
-                <p className="mt-1 text-[9px] text-slate-400">
-                  {news.length} headlines
-                </p>
-              </div>
-
-              <div className={`${innerGlass} p-3.5`}>
-                <p className="text-[10px] text-slate-500">AI research</p>
-
-                <p className="mt-3 text-sm font-bold text-slate-900">
-                  {analysisMeta?.aiProvider || "Gemini"}
-                </p>
-
-                <p className="mt-1 text-[9px] text-slate-400">
-                  Provider confirmed after analysis
-                </p>
-              </div>
-
-              <div className={`${innerGlass} p-3.5`}>
-                <p className="text-[10px] text-slate-500">Market stance</p>
-
-                <p className="mt-3 text-sm font-bold text-slate-900">
-                  {marketDirection}
-                </p>
-
-                <p className="mt-1 text-[9px] text-slate-400">
-                  Based on index changes
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-3 rounded-2xl border border-white/80 bg-white/40 p-3.5">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-[10px] font-medium text-slate-500">
-                  Last market update
-                </span>
-
-                <span className="text-[9px] font-semibold text-slate-700">
-                  {formatDateTime(marketUpdatedAt)}
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => void loadMarketData()}
-                disabled={marketLoading}
-                className="mt-3 w-full rounded-xl border border-white bg-white/70 px-3 py-2.5 text-[10px] font-semibold text-slate-700 transition hover:bg-white disabled:opacity-50"
-              >
-                {marketLoading ? "Updating market..." : "Refresh market data ↻"}
-              </button>
             </div>
           </div>
         </section>
@@ -635,16 +569,25 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {[
               { ticker: "^GSPC", label: "S&P 500", quote: sp500 },
-              { ticker: "^IXIC", label: "NASDAQ Composite", quote: nasdaq },
+              {
+                ticker: "^IXIC",
+                label: "NASDAQ Composite",
+                quote: nasdaq,
+              },
             ].map(({ ticker, label, quote }) => {
               const available =
                 quote?.available === true &&
                 typeof quote.price === "number";
 
-              const change = formatPercent(quote?.changePercent);
+              const change = formatPercent(
+                quote?.changePercent
+              );
 
               return (
-                <article key={ticker} className={`${glassCard} p-4 sm:p-5`}>
+                <article
+                  key={ticker}
+                  className={`${glassCard} p-4 sm:p-5`}
+                >
                   <div className="flex items-center justify-between gap-2">
                     <span className="rounded-xl border border-white bg-white/65 px-2.5 py-1.5 text-[9px] font-bold tracking-wide text-slate-600">
                       INDEX
@@ -669,7 +612,11 @@ export default function Home() {
 
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/80 pt-3">
                     {change ? (
-                      <span className={`rounded-lg px-2.5 py-1.5 text-[10px] font-bold ${changeTone(quote?.changePercent)}`}>
+                      <span
+                        className={`rounded-lg px-2.5 py-1.5 text-[10px] font-bold ${changeTone(
+                          quote?.changePercent
+                        )}`}
+                      >
                         {change}
                       </span>
                     ) : (
@@ -724,128 +671,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* PRICE CHART */}
-        <section id="price-chart" className="mt-7 scroll-mt-5">
-          <SectionHeading
-            eyebrow="Historical market data"
-            title="Price performance"
-            description="Explore historical AAPL price observations across selectable time ranges."
-          />
-
-          <div className={`${glassCard} overflow-hidden p-2 sm:p-4`}>
-            <StockPriceChart ticker="AAPL" />
-          </div>
-        </section>
-
-        {/* FINANCIAL NEWS */}
-        <section id="news" className="mt-7 scroll-mt-5">
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-            <SectionHeading
-              eyebrow="What is happening"
-              title="Financial news"
-              description="Recent headlines related to selected companies."
-            />
-
-            <button
-              type="button"
-              onClick={() => void loadNews()}
-              disabled={newsLoading}
-              className="mb-4 rounded-xl border border-white/80 bg-white/60 px-3.5 py-2.5 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-white disabled:opacity-50"
-            >
-              {newsLoading ? "Refreshing..." : "Refresh news ↻"}
-            </button>
-          </div>
-
-          {newsError && (
-            <div className="mb-4 rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-[10px] leading-5 text-amber-800">
-              {newsError}
-            </div>
-          )}
-
-          {failedNewsTickers.length > 0 && (
-            <p className="mb-3 text-[10px] text-amber-700">
-              Some searches failed: {failedNewsTickers.join(", ")}.
-            </p>
-          )}
-
-          {newsLoading && news.length === 0 ? (
-            <div className={`${glassCard} p-8 text-center`}>
-              <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-sky-200 border-t-blue-600" />
-              <p className="mt-3 text-xs font-medium text-slate-600">
-                Loading financial headlines...
-              </p>
-            </div>
-          ) : news.length === 0 ? (
-            <div className={`${glassCard} p-8 text-center`}>
-              <p className="text-sm font-semibold text-slate-700">
-                No headlines available
-              </p>
-              <p className="mt-2 text-[11px] text-slate-500">
-                Try refreshing the feed.
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {news.slice(0, 9).map((item) => (
-                <article
-                  key={item.id}
-                  className={`${glassCard} flex flex-col p-4 transition duration-200 hover:-translate-y-0.5 hover:bg-white/75 hover:shadow-[0_20px_55px_rgba(15,23,42,0.10)]`}
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    {(item.relatedTickers ?? [])
-                      .filter((ticker) =>
-                        ["AAPL", "NVDA", "TSLA"].includes(ticker)
-                      )
-                      .slice(0, 3)
-                      .map((ticker) => (
-                        <span
-                          key={ticker}
-                          className="rounded-lg border border-blue-100/80 bg-blue-50/80 px-2 py-1 text-[9px] font-bold text-blue-700"
-                        >
-                          {ticker}
-                        </span>
-                      ))}
-
-                    <span className="text-[9px] text-slate-400">
-                      {formatDateTime(item.publishedAt)}
-                    </span>
-                  </div>
-
-                  <h4 className="mt-4 flex-1 text-sm font-semibold leading-6 text-slate-800">
-                    {item.title}
-                  </h4>
-
-                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/90 pt-3">
-                    <span className="max-w-[65%] truncate text-[10px] text-slate-500">
-                      {item.publisher || "Publisher not listed"}
-                    </span>
-
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 rounded-lg bg-white/70 px-2.5 py-2 text-[10px] font-semibold text-blue-700 transition hover:bg-white"
-                    >
-                      Read source ↗
-                    </a>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[9px] text-slate-400">
-            <p>
-              Headlines are not full articles. Verify details using the original source.
-            </p>
-
-            <p>
-              Updated {formatDateTime(newsUpdatedAt)}
-            </p>
-          </div>
-        </section>
-
-        {/* AI RESEARCH */}
+        {/* AI RESEARCH — MOVED DIRECTLY BELOW MARKET OVERVIEW */}
         <section id="research" className="mt-7 scroll-mt-5">
           <SectionHeading
             eyebrow="Your research assistant"
@@ -873,6 +699,7 @@ export default function Home() {
                     <p className="text-sm font-bold text-slate-900">
                       Stocky Research Engine
                     </p>
+
                     <p className="mt-1 text-[10px] text-slate-500">
                       Gemini · Market context · News context
                     </p>
@@ -895,7 +722,9 @@ export default function Home() {
               >
                 <input
                   value={question}
-                  onChange={(event) => setQuestion(event.target.value)}
+                  onChange={(event) =>
+                    setQuestion(event.target.value)
+                  }
                   placeholder="Ask about AAPL, NVDA, risk, catalysts..."
                   className="min-w-0 flex-1 rounded-2xl border border-white/90 bg-white/60 px-4 py-3.5 text-xs text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:bg-white/80 focus:ring-4 focus:ring-sky-100/60"
                 />
@@ -905,7 +734,9 @@ export default function Home() {
                   disabled={loading || !question.trim()}
                   className="rounded-2xl bg-slate-950 px-5 py-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {loading ? "Researching..." : "Generate report →"}
+                  {loading
+                    ? "Researching..."
+                    : "Generate report →"}
                 </button>
               </form>
 
@@ -986,18 +817,28 @@ export default function Home() {
                     <div className="space-y-3">
                       {reportLines(answer).map((line, index) => {
                         const heading = line.match(
-                          /^(#{1,4}\s+|(?:\d+[.)]\s+))(.+)$/
+                          /^(#{1,6}\s+|\*\*)(.+?)(\*\*)?:?$/
+                        );
+
+                        const numberedHeading = line.match(
+                          /^(\d+[.)]\s+)(.+)$/
                         );
 
                         const bullet = /^[-*•]\s+/.test(line);
 
+                        const isHeading =
+                          Boolean(heading) ||
+                          Boolean(numberedHeading);
+
                         const content = heading
                           ? heading[2]
-                          : bullet
-                            ? line.replace(/^[-*•]\s+/, "")
-                            : line;
+                          : numberedHeading
+                            ? numberedHeading[2]
+                            : bullet
+                              ? line.replace(/^[-*•]\s+/, "")
+                              : line;
 
-                        if (heading) {
+                        if (isHeading) {
                           return (
                             <h4
                               key={index}
@@ -1063,16 +904,19 @@ export default function Home() {
 
                       {analysisMeta?.generatedAt && (
                         <span className="self-center text-[9px] text-slate-400">
-                          Generated {formatDateTime(analysisMeta.generatedAt)}
+                          Generated{" "}
+                          {formatDateTime(
+                            analysisMeta.generatedAt
+                          )}
                         </span>
                       )}
                     </div>
 
                     <p className="mt-3 text-[10px] leading-5 text-slate-500">
-                      Research is informational, not personalized financial
-                      advice. Verify important facts, consider opposing
-                      scenarios, and make your own decisions. Market data
-                      may be delayed.
+                      Research is informational, not personalized
+                      financial advice. Verify important facts,
+                      consider opposing scenarios, and make your
+                      own decisions. Market data may be delayed.
                     </p>
                   </div>
                 </div>
@@ -1081,8 +925,139 @@ export default function Home() {
           </div>
         </section>
 
+        {/* PRICE CHART */}
+        <section
+          id="price-chart"
+          className="mt-7 scroll-mt-5"
+        >
+          <SectionHeading
+            eyebrow="Historical market data"
+            title="Price performance"
+            description="Explore historical AAPL price observations across selectable time ranges."
+          />
+
+          <div className={`${glassCard} overflow-hidden p-2 sm:p-4`}>
+            <StockPriceChart ticker="AAPL" />
+          </div>
+        </section>
+
+        {/* FINANCIAL NEWS */}
+        <section id="news" className="mt-7 scroll-mt-5">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <SectionHeading
+              eyebrow="What is happening"
+              title="Financial news"
+              description="Recent headlines related to selected companies."
+            />
+
+            <button
+              type="button"
+              onClick={() => void loadNews()}
+              disabled={newsLoading}
+              className="mb-4 rounded-xl border border-white/80 bg-white/60 px-3.5 py-2.5 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-white disabled:opacity-50"
+            >
+              {newsLoading ? "Refreshing..." : "Refresh news ↻"}
+            </button>
+          </div>
+
+          {newsError && (
+            <div className="mb-4 rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-[10px] leading-5 text-amber-800">
+              {newsError}
+            </div>
+          )}
+
+          {failedNewsTickers.length > 0 && (
+            <p className="mb-3 text-[10px] text-amber-700">
+              Some searches failed:{" "}
+              {failedNewsTickers.join(", ")}.
+            </p>
+          )}
+
+          {newsLoading && news.length === 0 ? (
+            <div className={`${glassCard} p-8 text-center`}>
+              <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-sky-200 border-t-blue-600" />
+
+              <p className="mt-3 text-xs font-medium text-slate-600">
+                Loading financial headlines...
+              </p>
+            </div>
+          ) : news.length === 0 ? (
+            <div className={`${glassCard} p-8 text-center`}>
+              <p className="text-sm font-semibold text-slate-700">
+                No headlines available
+              </p>
+
+              <p className="mt-2 text-[11px] text-slate-500">
+                Try refreshing the feed.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {news.slice(0, 9).map((item) => (
+                <article
+                  key={item.id}
+                  className={`${glassCard} flex flex-col p-4 transition duration-200 hover:-translate-y-0.5 hover:bg-white/75 hover:shadow-[0_20px_55px_rgba(15,23,42,0.10)]`}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    {(item.relatedTickers ?? [])
+                      .filter((ticker) =>
+                        ["AAPL", "NVDA", "TSLA"].includes(
+                          ticker
+                        )
+                      )
+                      .slice(0, 3)
+                      .map((ticker) => (
+                        <span
+                          key={ticker}
+                          className="rounded-lg border border-blue-100/80 bg-blue-50/80 px-2 py-1 text-[9px] font-bold text-blue-700"
+                        >
+                          {ticker}
+                        </span>
+                      ))}
+
+                    <span className="text-[9px] text-slate-400">
+                      {formatDateTime(item.publishedAt)}
+                    </span>
+                  </div>
+
+                  <h4 className="mt-4 flex-1 text-sm font-semibold leading-6 text-slate-800">
+                    {item.title}
+                  </h4>
+
+                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/90 pt-3">
+                    <span className="max-w-[65%] truncate text-[10px] text-slate-500">
+                      {item.publisher || "Publisher not listed"}
+                    </span>
+
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 rounded-lg bg-white/70 px-2.5 py-2 text-[10px] font-semibold text-blue-700 transition hover:bg-white"
+                    >
+                      Read source ↗
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[9px] text-slate-400">
+            <p>
+              Headlines are not full articles. Verify details
+              using the original source.
+            </p>
+
+            <p>Updated {formatDateTime(newsUpdatedAt)}</p>
+          </div>
+        </section>
+
         {/* WATCHLIST */}
-        <section id="watchlist" className="mt-7 scroll-mt-5">
+        <section
+          id="watchlist"
+          className="mt-7 scroll-mt-5"
+        >
           <SectionHeading
             eyebrow="Selected companies"
             title="Watchlist"
@@ -1098,7 +1073,9 @@ export default function Home() {
                 typeof quote.price === "number" &&
                 Number.isFinite(quote.price);
 
-              const change = formatPercent(quote?.changePercent);
+              const change = formatPercent(
+                quote?.changePercent
+              );
 
               return (
                 <article
@@ -1124,7 +1101,10 @@ export default function Home() {
                   <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
                     <p className="break-words text-2xl font-bold tracking-tight text-slate-950">
                       {hasPrice
-                        ? formatPrice(quote.price!, quote.currency || "USD")
+                        ? formatPrice(
+                            quote.price!,
+                            quote.currency || "USD"
+                          )
                         : marketLoading
                           ? "Loading..."
                           : "Unavailable"}
@@ -1132,7 +1112,9 @@ export default function Home() {
 
                     {change ? (
                       <span
-                        className={`rounded-xl px-2.5 py-1.5 text-[10px] font-bold ${changeTone(quote?.changePercent)}`}
+                        className={`rounded-xl px-2.5 py-1.5 text-[10px] font-bold ${changeTone(
+                          quote?.changePercent
+                        )}`}
                       >
                         {change}
                       </span>
@@ -1161,7 +1143,8 @@ export default function Home() {
 
                   {quote?.timestamp && (
                     <p className="mt-3 text-[9px] text-slate-400">
-                      Quote time: {formatDateTime(quote.timestamp)}
+                      Quote time:{" "}
+                      {formatDateTime(quote.timestamp)}
                     </p>
                   )}
                 </article>
@@ -1170,9 +1153,7 @@ export default function Home() {
           </div>
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[9px] leading-5 text-slate-400">
-            <p>
-              Source: Yahoo Finance chart endpoint.
-            </p>
+            <p>Source: Yahoo Finance chart endpoint.</p>
 
             <p>
               Risk labels are general categories, not calculated scores.
@@ -1255,9 +1236,18 @@ export default function Home() {
 
             <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
               {[
-                ["Market risk", "What could move the broader market?"],
-                ["Company risk", "What could weaken the company outlook?"],
-                ["Catalyst risk", "What events could change the thesis?"],
+                [
+                  "Market risk",
+                  "What could move the broader market?",
+                ],
+                [
+                  "Company risk",
+                  "What could weaken the company outlook?",
+                ],
+                [
+                  "Catalyst risk",
+                  "What events could change the thesis?",
+                ],
               ].map(([label, text]) => (
                 <div
                   key={label}
