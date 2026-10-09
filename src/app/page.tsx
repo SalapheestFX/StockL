@@ -1571,16 +1571,46 @@ export default function Home() {
           </div>
         </section>
 
-        {/* FOOTER */}
-        <footer className="mt-7 rounded-[24px] border border-white/70 bg-white/35 px-4 py-4 backdrop-blur-xl sm:px-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-bold text-slate-800">StockL</p>
-              <p className="mt-1 text-[10px] text-slate-500">Your AI-assisted research workspace.</p>
+                {/* COMPACT STOCKL FOOTER */}
+        <footer className="relative mt-6 overflow-hidden rounded-2xl border border-white/70 bg-white/40 px-4 py-4 shadow-[0_8px_30px_rgba(15,23,42,0.05)] backdrop-blur-xl sm:px-5">
+          <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Brand */}
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl border border-white/80 bg-white/80">
+                <Image
+                  src="/stocky-logo.jpg"
+                  alt="StockL"
+                  width={30}
+                  height={30}
+                  className="h-7 w-7 rounded-lg object-contain"
+                />
+              </div>
+
+              <div>
+                <p className="text-sm font-extrabold tracking-tight text-slate-900">
+                  StockL
+                </p>
+                <p className="text-[10px] text-slate-500">
+                  AI-assisted market research
+                </p>
+              </div>
             </div>
-            <p className="max-w-lg text-[9px] leading-5 text-slate-500 sm:text-right">
-              Market data may be delayed. Research is informational only. Verify important facts and remain the decision-maker.
+
+            {/* Disclaimer */}
+            <p className="max-w-md text-[10px] leading-4 text-slate-500 sm:text-right">
+              Market data may be delayed. AI research is informational only,
+              not financial advice. Always verify important information.
             </p>
+          </div>
+
+          <div className="mt-3 flex items-center justify-between border-t border-slate-200/70 pt-3">
+            <p className="text-[9px] text-slate-400">
+              © {new Date().getFullYear()} StockL
+            </p>
+            <span className="inline-flex items-center gap-1.5 text-[9px] font-medium text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Research workspace
+            </span>
           </div>
         </footer>
       </div>
