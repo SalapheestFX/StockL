@@ -37,7 +37,8 @@ export function getQwenStatus() {
 }
 
 export async function generateQwenText(
-  prompt: string
+  prompt: string,
+  onChunk?: (chunk: string) => void
 ): Promise<QwenResult> {
   const apiKey = process.env.QWEN_API_KEY?.trim();
   const model = process.env.QWEN_MODEL?.trim();
@@ -59,41 +60,41 @@ export async function generateQwenText(
     throw new Error("QWEN_INVALID_BASE_URL");
   }
 
-  const url = `${baseUrl.replace(/\/+$/, "")}/chat/completions`;
   const startedAt = Date.now();
   const limitedPrompt = prompt.slice(0, 4500);
   const controller = new AbortController();
-
-  // Allow time for Qwen's first token and the rest of the streamed response.
   const timeout = setTimeout(() => controller.abort(), 60000);
 
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        Accept: "text/event-stream",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: "system",
-            content: SYSTEM_INSTRUCTION,
-          },
-          {
-            role: "user",
-            content: limitedPrompt,
-          },
-        ],
-        temperature: 0.2,
-        max_tokens: 500,
-        stream: true,
-      }),
-      cache: "no-store",
-      signal: controller.signal,
-    });
+    const response = await fetch(
+      `${baseUrl.replace(/\/+$/, "")}/chat/completions`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          Accept: "text/event-stream",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: "system",
+              content: SYSTEM_INSTRUCTION,
+            },
+            {
+              role: "user",
+              content: limitedPrompt,
+            },
+          ],
+          temperature: 0.2,
+          max_tokens: 500,
+          stream: true,
+        }),
+        cache: "no-store",
+        signal: controller.signal,
+      }
+    );
 
     console.info("[StockL Qwen] Streaming response:", {
       elapsedMs: Date.now() - startedAt,
@@ -126,8 +127,59 @@ export async function generateQwenText(
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
+
     let buffer = "";
     let text = "";
+    let providerModel = model;
+
+    const processLine = (rawLine: string) => {
+      const line = rawLine.trim();
+
+      if (!line.startsWith("data:")) return;
+
+      const payload = line.slice(5).trim();
+
+      if (!payload || payload === "[DONE]") return;
+
+      let chunk: any;
+
+      try {
+        chunk = JSON.parse(payload);
+      } catch {
+        return;
+      }
+
+      if (typeof chunk?.model === "string") {
+        providerModel = chunk.model;
+      }
+
+      const content = chunk?.choices?.[0]?.delta?.content;
+
+      let piece = "";
+
+      if (typeof content === "string") {
+        piece = content;
+      } else if (Array.isArray(content)) {
+        piece = content
+          .map((part: any) =>
+            typeof part?.text === "string" ? part.text : ""
+          )
+          .join("");
+      }
+
+      if (piece) {
+        text += piece;
+
+        try {
+          onChunk?.(piece);
+        } catch (callbackError) {
+          console.error(
+            "[StockL Qwen] Chunk callback failed:",
+            callbackError
+          );
+        }
+      }
+    };
 
     while (true) {
       const { value, done } = await reader.read();
@@ -139,71 +191,22 @@ export async function generateQwenText(
       const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";
 
-      for (const rawLine of lines) {
-        const line = rawLine.trim();
-
-        if (!line.startsWith("data:")) continue;
-
-        const payload = line.slice(5).trim();
-
-        if (!payload || payload === "[DONE]") continue;
-
-        let chunk: any;
-
-        try {
-          chunk = JSON.parse(payload);
-        } catch {
-          continue;
-        }
-
-        const content = chunk?.choices?.[0]?.delta?.content;
-
-        if (typeof content === "string") {
-          text += content;
-        } else if (Array.isArray(content)) {
-          text += content
-            .map((part: any) =>
-              typeof part?.text === "string" ? part.text : ""
-            )
-            .join("");
-        }
+      for (const line of lines) {
+        processLine(line);
       }
     }
 
-    // Process any final event left in the buffer.
-    const finalLine = buffer.trim();
+    buffer += decoder.decode();
 
-    if (finalLine.startsWith("data:")) {
-      const payload = finalLine.slice(5).trim();
-
-      if (payload && payload !== "[DONE]") {
-        try {
-          const chunk = JSON.parse(payload);
-          const content = chunk?.choices?.[0]?.delta?.content;
-
-          if (typeof content === "string") {
-            text += content;
-          } else if (Array.isArray(content)) {
-            text += content
-              .map((part: any) =>
-                typeof part?.text === "string" ? part.text : ""
-              )
-              .join("");
-          }
-        } catch {
-          // Ignore a final incomplete event.
-        }
+    if (buffer.trim()) {
+      for (const line of buffer.split("\n")) {
+        processLine(line);
       }
     }
 
     const cleanedText = text.trim();
 
     if (!cleanedText) {
-      console.error("[StockL Qwen] Empty streaming response:", {
-        elapsedMs: Date.now() - startedAt,
-        model,
-      });
-
       throw new Error("QWEN_EMPTY_RESPONSE");
     }
 
@@ -214,7 +217,7 @@ export async function generateQwenText(
 
     return {
       text: cleanedText,
-      model,
+      model: providerModel,
     };
   } catch (error) {
     const err = error as Error;
@@ -227,8 +230,7 @@ export async function generateQwenText(
 
     if (
       err.name === "AbortError" ||
-      err.name === "TimeoutError" ||
-      err.message === "QWEN_TIMEOUT"
+      err.name === "TimeoutError"
     ) {
       throw new Error("QWEN_TIMEOUT");
     }
