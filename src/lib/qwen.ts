@@ -6,14 +6,15 @@ export type QwenResult = {
 };
 
 const SYSTEM_INSTRUCTION = [
-  "You are StockL, an evidence-driven financial research analyst.",
-  "Use only the evidence supplied. Never invent facts, prices, news, indicators, or citations.",
-  "Separate verified observations from interpretations and unknowns.",
-  "Explain both bullish and bearish possibilities and their risks.",
-  "Do not provide personalized financial advice or guarantee returns.",
-  "The human user makes all final investment decisions.",
-  "Write concise, professional Markdown.",
-  "Use these sections where relevant: Executive Summary, Market Snapshot, Evidence, Bull Case, Bear Case, Risks, What to Monitor, Conclusion.",
+  "You are StockL, a concise financial research analyst.",
+  "Use only the supplied evidence. Never invent prices, news, indicators, or citations.",
+  "Separate facts from interpretations and unknowns.",
+  "Explain both bull and bear cases, including risks and invalidation conditions.",
+  "Do not guarantee returns or provide personalized financial advice.",
+  "The human trader makes all final decisions.",
+  "Use concise Markdown with these sections:",
+  "Executive Summary, Market Snapshot, Bull Case, Bear Case, Key Risks, What to Monitor, Conclusion.",
+  "Keep the entire report brief and evidence-based.",
 ].join("\n");
 
 export function getQwenStatus() {
@@ -61,8 +62,8 @@ export async function generateQwenText(
   const url = `${baseUrl.replace(/\/+$/, "")}/chat/completions`;
   const startedAt = Date.now();
 
-  // Keep the first diagnostic request deliberately small.
-  const limitedPrompt = prompt.slice(0, 6500);
+  // Keep the prompt compact to reduce processing time.
+  const limitedPrompt = prompt.slice(0, 4500);
 
   let response: Response;
 
@@ -86,18 +87,15 @@ export async function generateQwenText(
           },
         ],
         temperature: 0.2,
-        max_tokens: 700,
+        max_tokens: 250,
         stream: false,
       }),
       cache: "no-store",
       signal: AbortSignal.timeout(25000),
     });
   } catch (error) {
-    const elapsedMs = Date.now() - startedAt;
-
     console.error("[StockL Qwen] Request failed:", {
-      elapsedMs,
-      promptCharacters: limitedPrompt.length,
+      elapsedMs: Date.now() - startedAt,
       errorName: error instanceof Error ? error.name : "Unknown",
       errorMessage: error instanceof Error ? error.message : "Unknown",
     });
@@ -162,8 +160,6 @@ export async function generateQwenText(
   if (!text) {
     console.error("[StockL Qwen] Empty response:", {
       model: data?.model ?? null,
-      responseKeys:
-        data && typeof data === "object" ? Object.keys(data) : [],
     });
 
     throw new Error("QWEN_EMPTY_RESPONSE");
