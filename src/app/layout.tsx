@@ -2,9 +2,31 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Stocky AI | Intelligent Stock Research",
+  title: {
+    default: "StockL | AI Trading Research Desk",
+    template: "%s | StockL",
+  },
   description:
-    "Explore market prices, financial news, and AI-assisted stock research with Stocky AI.",
+    "StockL is an AI-assisted trading research desk for stock market analysis, live market insights, financial news, and risk assessment.",
+  applicationName: "StockL",
+  icons: {
+    icon: [
+      {
+        url: "/stocky-logo.jpg",
+        type: "image/jpeg",
+      },
+    ],
+    shortcut: "/stocky-logo.jpg",
+    apple: "/stocky-logo.jpg",
+  },
+  keywords: [
+    "StockL",
+    "AI trading research",
+    "stock market analysis",
+    "market insights",
+    "financial news",
+    "risk assessment",
+  ],
 };
 
 export default function RootLayout({
