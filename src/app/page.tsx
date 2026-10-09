@@ -79,9 +79,6 @@ const supportedSymbols = new Set([
 const glassCard =
   "rounded-[28px] border border-white/70 bg-white/55 shadow-[0_15px_50px_rgba(15,23,42,0.07)] backdrop-blur-2xl";
 
-const innerGlass =
-  "rounded-2xl border border-white/70 bg-white/40 backdrop-blur-xl";
-
 function formatPrice(price: number, currency = "USD") {
   try {
     return new Intl.NumberFormat("en-US", {
@@ -185,30 +182,22 @@ function StatusDot({ active = true }: { active?: boolean }) {
 export default function Home() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
-
   const [analysisMeta, setAnalysisMeta] =
     useState<AnalysisResponse | null>(null);
-
   const [loading, setLoading] = useState(false);
 
   const [marketData, setMarketData] =
     useState<Record<string, MarketQuote>>({});
-
   const [marketLoading, setMarketLoading] = useState(true);
-
   const [marketUpdatedAt, setMarketUpdatedAt] =
     useState<string | null>(null);
-
   const [marketError, setMarketError] = useState("");
 
   const [news, setNews] = useState<NewsItem[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
-
   const [newsUpdatedAt, setNewsUpdatedAt] =
     useState<string | null>(null);
-
   const [newsError, setNewsError] = useState("");
-
   const [failedNewsTickers, setFailedNewsTickers] =
     useState<string[]>([]);
 
@@ -380,7 +369,6 @@ export default function Home() {
         setAnswer(
           data.error || "The research request failed."
         );
-
         setAnalysisMeta(data);
         return;
       }
@@ -394,7 +382,7 @@ export default function Home() {
       setAnalysisMeta(data);
     } catch {
       setAnswer(
-        "Unable to reach the Stocky research engine. Please try again."
+        "Unable to reach the StockL research engine. Please try again."
       );
     } finally {
       setLoading(false);
@@ -436,7 +424,6 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#edf4f8] text-slate-950">
-      {/* Ambient background */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -left-40 -top-32 h-[28rem] w-[28rem] rounded-full bg-sky-300/25 blur-3xl" />
         <div className="absolute -right-32 top-40 h-[30rem] w-[30rem] rounded-full bg-blue-300/20 blur-3xl" />
@@ -451,12 +438,13 @@ export default function Home() {
         >
           <a
             href="#"
+            aria-label="StockL home"
             className="flex min-w-0 items-center gap-2.5 sm:gap-3"
           >
             <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-2xl border border-white/80 bg-white/75 shadow-sm sm:h-11 sm:w-11">
               <Image
                 src="/stocky-logo.jpg"
-                alt="StockL  logo"
+                alt="StockL logo"
                 fill
                 priority
                 sizes="44px"
@@ -467,7 +455,7 @@ export default function Home() {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <h1 className="text-sm font-extrabold tracking-tight text-slate-950 sm:text-base">
-                  Stocky <span className="text-blue-700">AI</span>
+                  StockL
                 </h1>
 
                 <span className="rounded-lg border border-blue-100/90 bg-blue-50/80 px-1.5 py-1 text-[7px] font-bold tracking-[0.1em] text-blue-700 sm:px-2 sm:text-[8px]">
@@ -485,7 +473,7 @@ export default function Home() {
             href="#research"
             className="shrink-0 rounded-xl bg-slate-950 px-3 py-2.5 text-[10px] font-semibold text-white shadow-sm transition hover:bg-slate-800 sm:px-4 sm:text-xs"
           >
-            Ask Stocky <span aria-hidden="true">↗</span>
+            Ask StockL <span aria-hidden="true">↗</span>
           </a>
         </header>
 
@@ -534,17 +522,15 @@ export default function Home() {
 
               <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 border-t border-white/10 pt-5 text-[9px] text-slate-400">
                 <span className="flex items-center gap-2">
-                  <StatusDot active />
+                  <StatusDot />
                   Market monitoring
                 </span>
-
                 <span className="flex items-center gap-2">
-                  <StatusDot active />
+                  <StatusDot />
                   AI-assisted research
                 </span>
-
                 <span className="flex items-center gap-2">
-                  <StatusDot active />
+                  <StatusDot />
                   Human-led decisions
                 </span>
               </div>
@@ -592,7 +578,6 @@ export default function Home() {
                     <span className="rounded-xl border border-white bg-white/65 px-2.5 py-1.5 text-[9px] font-bold tracking-wide text-slate-600">
                       INDEX
                     </span>
-
                     <span className="text-[9px] text-slate-400">
                       {ticker}
                     </span>
@@ -637,15 +622,12 @@ export default function Home() {
               <span className="inline-flex rounded-xl border border-white bg-white/65 px-2.5 py-1.5 text-[9px] font-bold text-slate-600">
                 MARKET SIGNAL
               </span>
-
               <p className="mt-4 text-xs font-medium text-slate-500">
                 Market direction
               </p>
-
               <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
                 {marketDirection}
               </p>
-
               <p className="mt-3 text-[10px] leading-5 text-slate-500">
                 Summarized from reported S&P 500 and NASDAQ changes.
               </p>
@@ -655,15 +637,12 @@ export default function Home() {
               <span className="inline-flex rounded-xl border border-white bg-white/65 px-2.5 py-1.5 text-[9px] font-bold text-slate-600">
                 DATA STATUS
               </span>
-
               <p className="mt-4 text-xs font-medium text-slate-500">
                 Last market fetch
               </p>
-
               <p className="mt-2 text-lg font-bold tracking-tight text-slate-950">
                 {formatDateTime(marketUpdatedAt)}
               </p>
-
               <p className="mt-3 text-[10px] leading-5 text-slate-500">
                 The source may provide delayed data.
               </p>
@@ -671,12 +650,12 @@ export default function Home() {
           </div>
         </section>
 
-        {/* AI RESEARCH — MOVED DIRECTLY BELOW MARKET OVERVIEW */}
+        {/* STOCKL RESEARCH */}
         <section id="research" className="mt-7 scroll-mt-5">
           <SectionHeading
             eyebrow="Your research assistant"
-            title="Ask Stocky"
-            description="Turn a research question into an AI-assisted report using your existing research engine."
+            title="Ask StockL"
+            description="Turn a research question into an AI-assisted report using your research engine."
           />
 
           <div className={`${glassCard} overflow-hidden`}>
@@ -697,11 +676,10 @@ export default function Home() {
 
                   <div>
                     <p className="text-sm font-bold text-slate-900">
-                      Stocky Research Engine
+                      StockL Research Engine
                     </p>
-
                     <p className="mt-1 text-[10px] text-slate-500">
-                      Gemini · Market context · News context
+                      Qwen · Market context · News context
                     </p>
                   </div>
                 </div>
@@ -758,12 +736,10 @@ export default function Home() {
                 <div className="mt-5 rounded-2xl border border-sky-100/90 bg-sky-50/50 p-4">
                   <div className="flex items-center gap-3">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-sky-200 border-t-blue-600" />
-
                     <div>
                       <p className="text-xs font-semibold text-slate-800">
                         Preparing your research
                       </p>
-
                       <p className="mt-1 text-[10px] leading-5 text-slate-500">
                         Gathering market context and generating analysis...
                       </p>
@@ -779,7 +755,6 @@ export default function Home() {
                       <p className="text-sm font-bold text-slate-900">
                         Research report
                       </p>
-
                       <p className="mt-1 text-[10px] text-slate-500">
                         {analysisMeta?.aiProvider || "StockL"}
                         {analysisMeta?.aiModel
@@ -808,7 +783,6 @@ export default function Home() {
                       <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-blue-700">
                         Research question
                       </p>
-
                       <p className="mt-2 text-xs font-semibold leading-6 text-slate-800">
                         {question}
                       </p>
@@ -856,7 +830,6 @@ export default function Home() {
                               className="flex gap-3 pl-1"
                             >
                               <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
-
                               <p className="text-xs leading-6 text-slate-600">
                                 {content.replace(/\*\*/g, "")}
                               </p>
@@ -905,9 +878,7 @@ export default function Home() {
                       {analysisMeta?.generatedAt && (
                         <span className="self-center text-[9px] text-slate-400">
                           Generated{" "}
-                          {formatDateTime(
-                            analysisMeta.generatedAt
-                          )}
+                          {formatDateTime(analysisMeta.generatedAt)}
                         </span>
                       )}
                     </div>
@@ -968,15 +939,13 @@ export default function Home() {
 
           {failedNewsTickers.length > 0 && (
             <p className="mb-3 text-[10px] text-amber-700">
-              Some searches failed:{" "}
-              {failedNewsTickers.join(", ")}.
+              Some searches failed: {failedNewsTickers.join(", ")}.
             </p>
           )}
 
           {newsLoading && news.length === 0 ? (
             <div className={`${glassCard} p-8 text-center`}>
               <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-sky-200 border-t-blue-600" />
-
               <p className="mt-3 text-xs font-medium text-slate-600">
                 Loading financial headlines...
               </p>
@@ -986,7 +955,6 @@ export default function Home() {
               <p className="text-sm font-semibold text-slate-700">
                 No headlines available
               </p>
-
               <p className="mt-2 text-[11px] text-slate-500">
                 Try refreshing the feed.
               </p>
@@ -1001,9 +969,7 @@ export default function Home() {
                   <div className="flex flex-wrap items-center gap-2">
                     {(item.relatedTickers ?? [])
                       .filter((ticker) =>
-                        ["AAPL", "NVDA", "TSLA"].includes(
-                          ticker
-                        )
+                        ["AAPL", "NVDA", "TSLA"].includes(ticker)
                       )
                       .slice(0, 3)
                       .map((ticker) => (
@@ -1045,19 +1011,14 @@ export default function Home() {
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[9px] text-slate-400">
             <p>
-              Headlines are not full articles. Verify details
-              using the original source.
+              Headlines are not full articles. Verify details using the original source.
             </p>
-
             <p>Updated {formatDateTime(newsUpdatedAt)}</p>
           </div>
         </section>
 
         {/* WATCHLIST */}
-        <section
-          id="watchlist"
-          className="mt-7 scroll-mt-5"
-        >
+        <section id="watchlist" className="mt-7 scroll-mt-5">
           <SectionHeading
             eyebrow="Selected companies"
             title="Watchlist"
@@ -1073,9 +1034,7 @@ export default function Home() {
                 typeof quote.price === "number" &&
                 Number.isFinite(quote.price);
 
-              const change = formatPercent(
-                quote?.changePercent
-              );
+              const change = formatPercent(quote?.changePercent);
 
               return (
                 <article
@@ -1087,7 +1046,6 @@ export default function Home() {
                       <h4 className="text-lg font-bold tracking-tight text-slate-950">
                         {stock.symbol}
                       </h4>
-
                       <p className="mt-1 text-[11px] text-slate-500">
                         {stock.name}
                       </p>
@@ -1129,7 +1087,6 @@ export default function Home() {
                     <span className="text-[10px] text-slate-500">
                       Risk profile
                     </span>
-
                     <span
                       className={`rounded-lg px-2.5 py-1.5 text-[9px] font-semibold ${
                         stock.risk === "High"
@@ -1143,8 +1100,7 @@ export default function Home() {
 
                   {quote?.timestamp && (
                     <p className="mt-3 text-[9px] text-slate-400">
-                      Quote time:{" "}
-                      {formatDateTime(quote.timestamp)}
+                      Quote time: {formatDateTime(quote.timestamp)}
                     </p>
                   )}
                 </article>
@@ -1154,7 +1110,6 @@ export default function Home() {
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[9px] leading-5 text-slate-400">
             <p>Source: Yahoo Finance chart endpoint.</p>
-
             <p>
               Risk labels are general categories, not calculated scores.
             </p>
@@ -1169,7 +1124,6 @@ export default function Home() {
                 <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-blue-700">
                   Research checklist
                 </p>
-
                 <h3 className="mt-1.5 text-sm font-bold text-slate-900">
                   Research watchpoints
                 </h3>
@@ -1202,12 +1156,10 @@ export default function Home() {
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-white/90 bg-white/70 text-[10px] font-bold text-blue-700">
                     0{index + 1}
                   </span>
-
                   <div>
                     <p className="text-xs font-semibold text-slate-800">
                       {item.title}
                     </p>
-
                     <p className="mt-1.5 text-[10px] leading-5 text-slate-500">
                       {item.text}
                     </p>
@@ -1225,29 +1177,18 @@ export default function Home() {
             <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-blue-700">
               Decision framework
             </p>
-
             <h3 className="mt-1.5 text-sm font-bold text-slate-900">
               Risk review framework
             </h3>
-
             <p className="mt-1.5 text-[10px] leading-5 text-slate-500">
-              Questions Stocky should help you investigate before making a decision.
+              Questions StockL should help you investigate before making a decision.
             </p>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
               {[
-                [
-                  "Market risk",
-                  "What could move the broader market?",
-                ],
-                [
-                  "Company risk",
-                  "What could weaken the company outlook?",
-                ],
-                [
-                  "Catalyst risk",
-                  "What events could change the thesis?",
-                ],
+                ["Market risk", "What could move the broader market?"],
+                ["Company risk", "What could weaken the company outlook?"],
+                ["Catalyst risk", "What events could change the thesis?"],
               ].map(([label, text]) => (
                 <div
                   key={label}
@@ -1256,7 +1197,6 @@ export default function Home() {
                   <p className="text-xs font-bold text-slate-800">
                     {label}
                   </p>
-
                   <p className="mt-2 text-[10px] leading-5 text-slate-500">
                     {text}
                   </p>
@@ -1266,12 +1206,8 @@ export default function Home() {
 
             <div className="relative mt-4 overflow-hidden rounded-[24px] bg-slate-950/90 p-4 text-white shadow-[0_15px_35px_rgba(15,23,42,0.12)]">
               <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-sky-400/15 blur-2xl" />
-
               <div className="relative">
-                <p className="text-xs font-bold">
-                  The Stocky principle
-                </p>
-
+                <p className="text-xs font-bold">The StockL principle</p>
                 <p className="mt-2 text-[10px] leading-5 text-slate-300">
                   AI organizes evidence and uncertainty. People make the final decision.
                 </p>
@@ -1287,7 +1223,6 @@ export default function Home() {
               <p className="text-xs font-bold text-slate-800">
                 StockL
               </p>
-
               <p className="mt-1 text-[10px] text-slate-500">
                 Your AI-assisted research workspace.
               </p>
