@@ -130,7 +130,12 @@ async function fetchMarketData(
       lastDailyClose,
       previousDailyClose,
     };
-  } catch {
+  } catch (error) {
+    console.error("[StockL Market Data Error]", {
+      ticker,
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+
     return null;
   }
 }
@@ -168,7 +173,11 @@ async function fetchNews(
           ? item.relatedTickers.slice(0, 10)
           : [],
       }));
-  } catch {
+  } catch (error) {
+    console.error("[StockL News Error]", {
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+
     return [];
   }
 }
@@ -236,16 +245,11 @@ function buildResearchReport(
     news.length > 0
       ? news
           .map((item, index) => {
-            const date =
-              item.publishedAt || "Publication time unavailable";
-
-            const publisher =
-              item.publisher || "Publisher unavailable";
-
+            const date = item.publishedAt || "Publication time unavailable";
+            const publisher = item.publisher || "Publisher unavailable";
             const tickers = item.relatedTickers?.length
               ? `; related tickers: ${item.relatedTickers.join(", ")}`
               : "";
-
             const link = item.url ? `; URL: ${item.url}` : "";
 
             return `${index + 1}. ${item.title}\n   Publisher: ${publisher}; date: ${date}${tickers}${link}`;
@@ -294,7 +298,8 @@ function buildFallbackReport(
   question: string,
   ticker: string | null,
   market: MarketData | null,
-  news: NewsItem[]
+  news: NewsItem[],
+  warning: string
 ): string {
   const snapshot = market
     ? [
@@ -332,11 +337,8 @@ function buildFallbackReport(
     news.length > 0
       ? news
           .map((item, index) => {
-            const publisher =
-              item.publisher || "Publisher unavailable";
-
+            const publisher = item.publisher || "Publisher unavailable";
             const date = item.publishedAt || "Date unavailable";
-
             const link = item.url ? `\n   ${item.url}` : "";
 
             return `${index + 1}. ${item.title}\n   ${publisher} · ${date}${link}`;
@@ -353,6 +355,8 @@ function buildFallbackReport(
 - **Generated at (UTC):** ${new Date().toISOString()}
 
 This is StockL's rule-based fallback report. Qwen did not generate this response.
+
+**Qwen diagnostic:** ${warning}
 
 ## 2. Market Snapshot
 
@@ -411,42 +415,42 @@ function safeQwenError(error: unknown): string {
     error instanceof Error ? error.message : "UNKNOWN_ERROR";
 
   if (message === "QWEN_NOT_CONFIGURED") {
-    return "Qwen is not configured. Check the QWEN_API_KEY environment variable.";
+    return "QWEN_NOT_CONFIGURED: one or more required environment variables are missing.";
+  }
+
+  if (message === "QWEN_INVALID_BASE_URL") {
+    return "QWEN_INVALID_BASE_URL: check the configured Qwen base URL.";
   }
 
   if (message === "QWEN_AUTH_FAILED") {
-    return "Qwen authentication failed. Check your API key and access permissions.";
+    return "QWEN_AUTH_FAILED: the Qwen service rejected authentication. Verify the key and permissions.";
   }
 
   if (message === "QWEN_RATE_LIMITED") {
-    return "Qwen rate limit or quota reached. Try again later or check your quota.";
+    return "QWEN_RATE_LIMITED: check API quota and rate limits.";
   }
 
   if (message === "QWEN_EMPTY_RESPONSE") {
-    return "Qwen returned no text for this request.";
-  }
-
-  if (message.startsWith("QWEN_REQUEST_FAILED_")) {
-    return `Qwen request failed (${message.replace("QWEN_REQUEST_FAILED_", "HTTP ")}).`;
-  }
-
-  if (
-    message === "QWEN_TIMEOUT" ||
-    message.includes("TimeoutError") ||
-    message.toLowerCase().includes("timed out")
-  ) {
-    return "The Qwen request timed out.";
-  }
-
-  if (message === "QWEN_CONNECTION_FAILED") {
-    return "StockL could not connect to Qwen. Check the service and network connection.";
+    return "QWEN_EMPTY_RESPONSE: the service returned no usable text.";
   }
 
   if (message === "QWEN_INVALID_RESPONSE") {
-    return "Qwen returned an unexpected response.";
+    return "QWEN_INVALID_RESPONSE: the service did not return valid JSON.";
   }
 
-  return "Qwen is temporarily unavailable. StockL used its non-AI fallback report.";
+  if (message === "QWEN_CONNECTION_FAILED") {
+    return "QWEN_CONNECTION_FAILED: the server could not establish a connection to the service.";
+  }
+
+  if (message === "QWEN_TIMEOUT") {
+    return "QWEN_TIMEOUT: the request exceeded its time limit.";
+  }
+
+  if (message.startsWith("QWEN_REQUEST_FAILED_")) {
+    return message;
+  }
+
+  return "QWEN_UNKNOWN_ERROR: inspect the server logs for additional details.";
 }
 
 export async function POST(request: Request) {
@@ -491,6 +495,11 @@ export async function POST(request: Request) {
     try {
       const result = await generateQwenText(prompt);
 
+      console.info("[StockL Qwen diagnostic]", {
+        status: "connected",
+        model: result.model,
+      });
+
       return NextResponse.json({
         answer: result.text,
         ticker,
@@ -505,11 +514,24 @@ export async function POST(request: Request) {
         generatedAt: new Date().toISOString(),
       });
     } catch (error) {
+      const internalError =
+        error instanceof Error ? error.message : "UNKNOWN_ERROR";
+
+      console.error("[StockL Qwen diagnostic]", {
+        error: internalError,
+        hasApiKey: Boolean(process.env.QWEN_API_KEY?.trim()),
+        hasBaseUrl: Boolean(process.env.QWEN_BASE_URL?.trim()),
+        hasModel: Boolean(process.env.QWEN_MODEL?.trim()),
+      });
+
+      const warning = safeQwenError(error);
+
       const answer = buildFallbackReport(
         question,
         ticker,
         market,
-        news
+        news,
+        warning
       );
 
       return NextResponse.json({
@@ -523,11 +545,15 @@ export async function POST(request: Request) {
         aiModel: null,
         llmConnected: false,
         liveMarketData: market !== null,
-        warning: safeQwenError(error),
+        warning,
         generatedAt: new Date().toISOString(),
       });
     }
-  } catch {
+  } catch (error) {
+    console.error("[StockL Analyze Route Error]", {
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+
     return NextResponse.json(
       { error: "Invalid request. Please try again." },
       { status: 400 }
