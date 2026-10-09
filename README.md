@@ -10,7 +10,7 @@ The goal is to make financial research more accessible and organized while keepi
 
  Live Demo
 
-Try StockL: https://stocky-nine-theta.vercel.app/
+Try StockL: https://stockl-research.vercel.app/#news
 
 GitHub Repository: https://github.com/SalapheestFX/StockL
 
