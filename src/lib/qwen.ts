@@ -7,30 +7,13 @@ export type QwenResult = {
 
 const SYSTEM_INSTRUCTION = [
   "You are StockL, an evidence-driven financial research analyst.",
-  "Analyze only the evidence supplied. Never invent prices, facts, metrics, news, sources, citations, or financial results.",
-  "Distinguish observed facts from interpretations, assumptions, and unknowns.",
-  "Do not claim to have read full articles when only headlines are provided.",
-  "Do not invent technical indicators, price targets, probabilities, expected returns, or confidence scores.",
-  "Explain meaningful bull and bear cases using supplied evidence and clearly label unverified hypotheses.",
-  "Identify missing information and important risks.",
-  "Distinguish the latest reported price from previous closes and identify timestamps and data sources.",
-  "Never describe one price observation as proof of a sustained trend.",
-  "Use only source URLs supplied in the research context.",
-  "Do not provide personalized financial advice, guarantee returns, or execute trades.",
+  "Use only the evidence supplied. Never invent facts, prices, news, indicators, or citations.",
+  "Separate verified observations from interpretations and unknowns.",
+  "Explain both bullish and bearish possibilities and their risks.",
+  "Do not provide personalized financial advice or guarantee returns.",
   "The human user makes all final investment decisions.",
-  "Use concise, professional Markdown.",
-  "",
-  "Structure the report with these sections where relevant:",
-  "1. Executive Summary",
-  "2. Market Snapshot",
-  "3. Evidence and Observations",
-  "4. Trend and Momentum",
-  "5. News and Catalysts",
-  "6. Bull Case",
-  "7. Bear Case",
-  "8. Key Risks and Unknowns",
-  "9. What to Monitor Next",
-  "10. Balanced Conclusion",
+  "Write concise, professional Markdown.",
+  "Use these sections where relevant: Executive Summary, Market Snapshot, Evidence, Bull Case, Bear Case, Risks, What to Monitor, Conclusion.",
 ].join("\n");
 
 export function getQwenStatus() {
@@ -75,8 +58,11 @@ export async function generateQwenText(
     throw new Error("QWEN_INVALID_BASE_URL");
   }
 
-  const normalizedBase = baseUrl.replace(/\/+$/, "");
-  const url = `${normalizedBase}/chat/completions`;
+  const url = `${baseUrl.replace(/\/+$/, "")}/chat/completions`;
+  const startedAt = Date.now();
+
+  // Keep the first diagnostic request deliberately small.
+  const limitedPrompt = prompt.slice(0, 6500);
 
   let response: Response;
 
@@ -96,17 +82,26 @@ export async function generateQwenText(
           },
           {
             role: "user",
-            content: prompt,
+            content: limitedPrompt,
           },
         ],
         temperature: 0.2,
-        max_tokens: 1800,
+        max_tokens: 700,
         stream: false,
       }),
       cache: "no-store",
-      signal: AbortSignal.timeout(60000),
+      signal: AbortSignal.timeout(25000),
     });
   } catch (error) {
+    const elapsedMs = Date.now() - startedAt;
+
+    console.error("[StockL Qwen] Request failed:", {
+      elapsedMs,
+      promptCharacters: limitedPrompt.length,
+      errorName: error instanceof Error ? error.name : "Unknown",
+      errorMessage: error instanceof Error ? error.message : "Unknown",
+    });
+
     if (
       error instanceof Error &&
       (error.name === "TimeoutError" || error.name === "AbortError")
@@ -114,16 +109,21 @@ export async function generateQwenText(
       throw new Error("QWEN_TIMEOUT");
     }
 
-    console.error("[StockL Qwen] Connection error:", error);
     throw new Error("QWEN_CONNECTION_FAILED");
   }
 
+  console.info("[StockL Qwen] Provider response:", {
+    elapsedMs: Date.now() - startedAt,
+    status: response.status,
+    promptCharacters: limitedPrompt.length,
+  });
+
   if (!response.ok) {
-    // Read the provider's error response for server-side diagnostics.
     const providerError = await response.text().catch(() => "");
+
     console.error("[StockL Qwen] HTTP error:", {
       status: response.status,
-      body: providerError.slice(0, 1000),
+      body: providerError.slice(0, 500),
     });
 
     if (response.status === 401 || response.status === 403) {
@@ -160,7 +160,7 @@ export async function generateQwenText(
         : "";
 
   if (!text) {
-    console.error("[StockL Qwen] Empty or unexpected response:", {
+    console.error("[StockL Qwen] Empty response:", {
       model: data?.model ?? null,
       responseKeys:
         data && typeof data === "object" ? Object.keys(data) : [],
