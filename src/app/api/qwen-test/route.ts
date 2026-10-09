@@ -17,7 +17,26 @@ export async function GET() {
 
   const started = Date.now();
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+  const timer = setTimeout(() => controller.abort(), 25000);
+
+  const prompt = [
+    "STOCKL AI RESEARCH CONTEXT",
+    "User question: Analyze AAPL.",
+    "Asset: AAPL — Apple Inc.",
+    "MARKET DATA",
+    "Latest reported price: $340.42",
+    "Change versus previous close: +3.06%",
+    "Previous close: $330.32",
+    "Source: Yahoo Finance chart endpoint. Quote may be delayed.",
+    "RETRIEVED NEWS",
+    "Apple is the toll collector on the consumer AI highway, Dan Ives says.",
+    "RESEARCH INSTRUCTIONS",
+    "Analyze the supplied evidence, not assumptions presented as facts.",
+    "Provide a concise executive summary, market snapshot, bull case, bear case, risks, what to monitor next, and a balanced conclusion.",
+    "Never invent indicators, prices, events, or citations.",
+    "Do not provide personalized financial advice or guarantee returns.",
+    "The human trader makes the final decision.",
+  ].join("\n");
 
   try {
     const response = await fetch(
@@ -31,9 +50,18 @@ export async function GET() {
         body: JSON.stringify({
           model,
           messages: [
-            { role: "user", content: "Reply with only OK" },
+            {
+              role: "system",
+              content:
+                "You are StockL, an evidence-driven financial research analyst. Be concise and never invent facts.",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
           ],
-          max_tokens: 10,
+          temperature: 0.2,
+          max_tokens: 400,
           stream: false,
         }),
         cache: "no-store",
@@ -44,7 +72,13 @@ export async function GET() {
     const elapsedMs = Date.now() - started;
 
     if (!response.ok) {
-      console.error("[Qwen test] Provider HTTP status:", response.status);
+      const providerError = await response.text().catch(() => "");
+
+      console.error("[Qwen test] Provider rejected request:", {
+        status: response.status,
+        elapsedMs,
+        body: providerError.slice(0, 500),
+      });
 
       return NextResponse.json({
         ok: false,
@@ -55,25 +89,51 @@ export async function GET() {
     }
 
     const data = await response.json();
-    const answer = data?.choices?.[0]?.message?.content;
+    const content = data?.choices?.[0]?.message?.content;
+
+    const answer =
+      typeof content === "string"
+        ? content.trim()
+        : Array.isArray(content)
+          ? content
+              .map((part: any) =>
+                typeof part?.text === "string" ? part.text : ""
+              )
+              .join("\n")
+              .trim()
+          : "";
+
+    console.info("[Qwen test] Research-style request completed:", {
+      elapsedMs,
+      promptCharacters: prompt.length,
+      receivedAnswer: Boolean(answer),
+      answerCharacters: answer.length,
+    });
 
     return NextResponse.json({
-      ok: true,
+      ok: Boolean(answer),
       providerStatus: response.status,
       elapsedMs,
       model: data?.model ?? model,
       receivedAnswer: Boolean(answer),
+      answerCharacters: answer.length,
+      answerPreview: answer.slice(0, 500),
     });
   } catch (error) {
     const elapsedMs = Date.now() - started;
 
-    console.error("[Qwen test] Request failed:", error);
+    console.error("[Qwen test] Request failed:", {
+      elapsedMs,
+      errorName: error instanceof Error ? error.name : "Unknown",
+      errorMessage: error instanceof Error ? error.message : "Unknown",
+    });
 
     return NextResponse.json({
       ok: false,
       elapsedMs,
       error:
-        error instanceof Error && error.name === "AbortError"
+        error instanceof Error &&
+        (error.name === "AbortError" || error.name === "TimeoutError")
           ? "QWEN_TIMEOUT"
           : "QWEN_CONNECTION_FAILED",
     });
