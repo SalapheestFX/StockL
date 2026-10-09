@@ -456,7 +456,7 @@ export default function Home() {
             <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-2xl border border-white/80 bg-white/75 shadow-sm sm:h-11 sm:w-11">
               <Image
                 src="/stocky-logo.jpg"
-                alt="Stocky AI logo"
+                alt="StockL  logo"
                 fill
                 priority
                 sizes="44px"
@@ -688,7 +688,7 @@ export default function Home() {
                   <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-white bg-white/75 shadow-sm">
                     <Image
                       src="/stocky-logo.jpg"
-                      alt="Stocky AI"
+                      alt="StockL"
                       fill
                       sizes="40px"
                       className="object-contain p-1"
@@ -781,7 +781,7 @@ export default function Home() {
                       </p>
 
                       <p className="mt-1 text-[10px] text-slate-500">
-                        {analysisMeta?.aiProvider || "Stocky AI"}
+                        {analysisMeta?.aiProvider || "StockL"}
                         {analysisMeta?.aiModel
                           ? ` · ${analysisMeta.aiModel}`
                           : ""}
@@ -1285,7 +1285,7 @@ export default function Home() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs font-bold text-slate-800">
-                Stocky AI
+                StockL
               </p>
 
               <p className="mt-1 text-[10px] text-slate-500">
