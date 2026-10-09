@@ -140,9 +140,7 @@ async function fetchMarketData(
   }
 }
 
-async function fetchNews(
-  requestUrl: string
-): Promise<NewsItem[]> {
+async function fetchNews(requestUrl: string): Promise<NewsItem[]> {
   try {
     const url = new URL("/api/news", requestUrl);
 
@@ -454,109 +452,221 @@ function safeQwenError(error: unknown): string {
 }
 
 export async function POST(request: Request) {
+  let body: { question?: unknown };
+
   try {
-    const body = await request.json();
-
-    const question =
-      typeof body.question === "string"
-        ? body.question.trim()
-        : "";
-
-    if (!question) {
-      return NextResponse.json(
-        { error: "A research question is required." },
-        { status: 400 }
-      );
-    }
-
-    if (question.length > 2000) {
-      return NextResponse.json(
-        {
-          error: "Please keep your research question under 2,000 characters.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const ticker = identifyTicker(question);
-
-    const [market, news] = await Promise.all([
-      ticker ? fetchMarketData(ticker) : Promise.resolve(null),
-      fetchNews(request.url),
-    ]);
-
-    const prompt = buildResearchReport(
-      question,
-      ticker,
-      market,
-      news
-    );
-
-    try {
-      const result = await generateQwenText(prompt);
-
-      console.info("[StockL Qwen diagnostic]", {
-        status: "connected",
-        model: result.model,
-      });
-
-      return NextResponse.json({
-        answer: result.text,
-        ticker,
-        market,
-        newsCount: news.length,
-        newsAvailable: news.length > 0,
-        status: "qwen-connected",
-        aiProvider: "Qwen",
-        aiModel: result.model,
-        llmConnected: true,
-        liveMarketData: market !== null,
-        generatedAt: new Date().toISOString(),
-      });
-    } catch (error) {
-      const internalError =
-        error instanceof Error ? error.message : "UNKNOWN_ERROR";
-
-      console.error("[StockL Qwen diagnostic]", {
-        error: internalError,
-        hasApiKey: Boolean(process.env.QWEN_API_KEY?.trim()),
-        hasBaseUrl: Boolean(process.env.QWEN_BASE_URL?.trim()),
-        hasModel: Boolean(process.env.QWEN_MODEL?.trim()),
-      });
-
-      const warning = safeQwenError(error);
-
-      const answer = buildFallbackReport(
-        question,
-        ticker,
-        market,
-        news,
-        warning
-      );
-
-      return NextResponse.json({
-        answer,
-        ticker,
-        market,
-        newsCount: news.length,
-        newsAvailable: news.length > 0,
-        status: "qwen-unavailable-fallback",
-        aiProvider: null,
-        aiModel: null,
-        llmConnected: false,
-        liveMarketData: market !== null,
-        warning,
-        generatedAt: new Date().toISOString(),
-      });
-    }
-  } catch (error) {
-    console.error("[StockL Analyze Route Error]", {
-      message: error instanceof Error ? error.message : "Unknown error",
-    });
-
+    body = await request.json();
+  } catch {
     return NextResponse.json(
       { error: "Invalid request. Please try again." },
       { status: 400 }
     );
   }
+
+  const question =
+    typeof body.question === "string"
+      ? body.question.trim()
+      : "";
+
+  if (!question) {
+    return NextResponse.json(
+      { error: "A research question is required." },
+      { status: 400 }
+    );
+  }
+
+  if (question.length > 2000) {
+    return NextResponse.json(
+      {
+        error: "Please keep your research question under 2,000 characters.",
+      },
+      { status: 400 }
+    );
+  }
+
+  const ticker = identifyTicker(question);
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let closed = false;
+      let chunksSent = 0;
+
+      function send(event: string, data: Record<string, unknown>) {
+        if (closed) return;
+
+        try {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ event, ...data })}\n\n`
+            )
+          );
+        } catch {
+          closed = true;
+        }
+      }
+
+      function finish() {
+        if (closed) return;
+
+        try {
+          controller.close();
+        } catch {
+          // The client may already have disconnected.
+        }
+
+        closed = true;
+      }
+
+      try {
+        send("status", {
+          message: "Gathering market data and financial news...",
+        });
+
+        const [market, news] = await Promise.all([
+          ticker ? fetchMarketData(ticker) : Promise.resolve(null),
+          fetchNews(request.url),
+        ]);
+
+        send("meta", {
+          ticker,
+          market,
+          newsCount: news.length,
+          newsAvailable: news.length > 0,
+          liveMarketData: market !== null,
+        });
+
+        send("status", {
+          message: "Connecting to Qwen and generating your report...",
+        });
+
+        const prompt = buildResearchReport(
+          question,
+          ticker,
+          market,
+          news
+        );
+
+        try {
+          const result = await generateQwenText(
+            prompt,
+            (chunk: string) => {
+              if (!chunk) return;
+
+              chunksSent += 1;
+              send("chunk", { text: chunk });
+            }
+          );
+
+          console.info("[StockL Qwen diagnostic]", {
+            status: "connected",
+            model: result.model,
+            chunksSent,
+          });
+
+          send("done", {
+            status: "qwen-connected",
+            aiProvider: "Qwen",
+            aiModel: result.model,
+            llmConnected: true,
+            ticker,
+            market,
+            newsCount: news.length,
+            newsAvailable: news.length > 0,
+            liveMarketData: market !== null,
+            generatedAt: new Date().toISOString(),
+          });
+        } catch (error) {
+          const internalError =
+            error instanceof Error
+              ? error.message
+              : "UNKNOWN_ERROR";
+
+          console.error("[StockL Qwen diagnostic]", {
+            error: internalError,
+            chunksSent,
+            hasApiKey: Boolean(
+              process.env.QWEN_API_KEY?.trim()
+            ),
+            hasBaseUrl: Boolean(
+              process.env.QWEN_BASE_URL?.trim()
+            ),
+            hasModel: Boolean(
+              process.env.QWEN_MODEL?.trim()
+            ),
+          });
+
+          const warning = safeQwenError(error);
+
+          if (chunksSent === 0) {
+            const fallback = buildFallbackReport(
+              question,
+              ticker,
+              market,
+              news,
+              warning
+            );
+
+            send("chunk", { text: fallback });
+
+            send("done", {
+              status: "qwen-unavailable-fallback",
+              aiProvider: null,
+              aiModel: null,
+              llmConnected: false,
+              ticker,
+              market,
+              newsCount: news.length,
+              newsAvailable: news.length > 0,
+              liveMarketData: market !== null,
+              warning,
+              generatedAt: new Date().toISOString(),
+            });
+          } else {
+            send("error", {
+              message:
+                "Qwen interrupted report generation. The displayed report may be incomplete.",
+            });
+
+            send("done", {
+              status: "qwen-stream-interrupted",
+              aiProvider: "Qwen",
+              aiModel: null,
+              llmConnected: true,
+              ticker,
+              market,
+              newsCount: news.length,
+              newsAvailable: news.length > 0,
+              liveMarketData: market !== null,
+              warning,
+              generatedAt: new Date().toISOString(),
+            });
+          }
+        }
+      } catch (error) {
+        console.error("[StockL Analyze Stream Error]", {
+          message:
+            error instanceof Error
+              ? error.message
+              : "Unknown error",
+        });
+
+        send("error", {
+          message:
+            "StockL could not complete the analysis. Please try again.",
+        });
+      } finally {
+        finish();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  });
 }
