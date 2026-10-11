@@ -234,7 +234,7 @@ export async function POST(request: Request) {
         [
           `👋 Welcome to StockL, ${firstName}!`,
           "",
-          "📈 YOUR PERSONAL AI STOCK RESEARCH DESK",
+          "📈 Your Personal AI Stock Research DESK",
           "",
           "Explore market movements, investigate catalysts, and compare bullish and bearish scenarios with AI-assisted research.",
           "",
@@ -312,7 +312,7 @@ export async function POST(request: Request) {
       await sendTelegramMessage(
         chatId,
         [
-          "📊 STOCKL MARKET RESEARCH",
+          "📊 StockL Market Research",
           "",
           "Choose a stock to investigate:",
           "",
@@ -365,7 +365,7 @@ export async function POST(request: Request) {
     await sendTelegramMessage(
       chatId,
       [
-        "🔎 STOCKL AI",
+        "🔎 StockL",
         "",
         `Preparing research for ${firstName}...`,
         "Gathering available market data and reviewing the question.",
