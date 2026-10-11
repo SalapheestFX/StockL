@@ -4,10 +4,15 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const TELEGRAM_API = "https://api.telegram.org";
+const STOCKL_URL = "https://stockl-research.vercel.app";
 
 type TelegramMessage = {
   message_id: number;
   text?: string;
+  from?: {
+    first_name?: string;
+    username?: string;
+  };
   chat: {
     id: number;
   };
@@ -24,11 +29,9 @@ async function sendTelegramMessage(
   const token = process.env.TELEGRAM_BOT_TOKEN;
 
   if (!token) {
-    throw new Error("TELEGRAM_BOT_TOKEN is not configured");
+    throw new Error("Telegram bot token is not configured");
   }
 
-  // Telegram limits a text message to 4096 characters.
-  // Leave room below that limit for safe delivery.
   const chunks: string[] = [];
   let remaining = text.trim();
 
@@ -63,6 +66,9 @@ async function sendTelegramMessage(
         body: JSON.stringify({
           chat_id: chatId,
           text: chunk,
+          link_preview_options: {
+            is_disabled: true,
+          },
         }),
         signal: AbortSignal.timeout(15000),
       }
@@ -73,9 +79,41 @@ async function sendTelegramMessage(
         "[StockL Telegram] Message delivery failed:",
         response.status
       );
+
       throw new Error("Telegram message delivery failed");
     }
   }
+}
+
+/**
+ * Converts common Markdown formatting into clean Telegram text.
+ * This prevents raw symbols such as ### and ** from appearing.
+ */
+function cleanReport(text: string): string {
+  return text
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/\*\*([\s\S]*?)\*\*/g, "$1")
+.replace(/__([\s\S]*?)__/g, "$1")
+    .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/^\s*[-*]\s+/gm, "• ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function formatResearchReport(report: string): string {
+  const cleaned = cleanReport(report);
+
+  return [
+    "📊 STOCKL  |  AI RESEARCH DESK",
+    "━━━━━━━━━━━━━━━━━━",
+    "",
+    cleaned,
+    "",
+    "━━━━━━━━━━━━━━━━━━",
+    "🤖 StockL AI Research",
+    "⚠️ Research assistance only. Not a trade recommendation.",
+  ].join("\n");
 }
 
 async function answerResearchQuestion(
@@ -100,7 +138,6 @@ async function answerResearchQuestion(
   }
 
   const responseText = await response.text();
-
   const lines = responseText.split(/\r?\n/);
   const chunks: string[] = [];
   let finalStatus = "";
@@ -123,7 +160,7 @@ async function answerResearchQuestion(
         chunks.push(`\n\nNotice: ${event.message}`);
       }
     } catch {
-      // Ignore incomplete or non-JSON SSE lines.
+      // Ignore non-JSON or incomplete streaming events.
     }
   }
 
@@ -141,7 +178,6 @@ async function answerResearchQuestion(
 }
 
 export async function GET() {
-  // A simple health check; this does not expose the bot token.
   return NextResponse.json({
     service: "StockL Telegram webhook",
     ready: Boolean(
@@ -188,6 +224,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  const firstName = message?.from?.first_name?.trim() || "Trader";
   const command = text.split(/\s+/)[0].split("@")[0].toLowerCase();
 
   try {
@@ -195,18 +232,31 @@ export async function POST(request: Request) {
       await sendTelegramMessage(
         chatId,
         [
-          "Welcome to StockL AI Research! 📊",
+          `👋 Welcome to StockL, ${firstName}!`,
           "",
-          "Ask research questions about supported stocks.",
+          "📈 YOUR PERSONAL AI STOCK RESEARCH DESK",
           "",
-          "Commands:",
-          "/analyze NVDA — Research NVIDIA",
-          "/analyze AAPL — Research Apple",
-          "/market — Learn how to request market research",
-          "/help — Show help",
-          "/website — Open StockL",
+          "Explore market movements, investigate catalysts, and compare bullish and bearish scenarios with AI-assisted research.",
           "",
-          "StockL supports research, not trade execution or guaranteed returns.",
+          "⚡ QUICK COMMANDS",
+          "",
+          "🔍 /analyze NVDA",
+          "Research NVIDIA",
+          "",
+          "📊 /market",
+          "Explore market research",
+          "",
+          "🌐 /website",
+          "Open the StockL dashboard",
+          "",
+          "❓ /help",
+          "View available commands",
+          "",
+          "💡 You can also send a stock research question directly.",
+          "",
+          "━━━━━━━━━━━━━━━━━━",
+          "🤖 StockL AI Research Desk",
+          "Research assistance, not trade execution.",
         ].join("\n")
       );
 
@@ -217,15 +267,27 @@ export async function POST(request: Request) {
       await sendTelegramMessage(
         chatId,
         [
-          "StockL AI Research Help",
+          "📚 STOCKL — COMMAND CENTER",
           "",
-          "Examples:",
-          "/analyze NVDA",
-          "/analyze TSLA",
-          "/analyze AAPL",
+          "🔍 /analyze NVDA",
+          "Research NVIDIA",
           "",
-          "You can also ask a research question:",
-          "Analyze NVDA and explain the bullish factors, bearish factors, and key risks.",
+          "🔍 /analyze AAPL",
+          "Research Apple",
+          "",
+          "🔍 /analyze TSLA",
+          "Research Tesla",
+          "",
+          "📊 /market",
+          "Get instructions for market research",
+          "",
+          "🌐 /website",
+          "Open the StockL dashboard",
+          "",
+          "You can also send a question such as:",
+          "What are the bullish and bearish factors for NVDA?",
+          "",
+          "⚠️ StockL provides research assistance and does not execute trades.",
         ].join("\n")
       );
 
@@ -235,7 +297,12 @@ export async function POST(request: Request) {
     if (command === "/website") {
       await sendTelegramMessage(
         chatId,
-        "Open StockL here:\nhttps://stockl-research.vercel.app"
+        [
+          "🌐 STOCKL AI RESEARCH DESK",
+          "",
+          "Explore StockL on the web:",
+          STOCKL_URL,
+        ].join("\n")
       );
 
       return NextResponse.json({ ok: true });
@@ -245,11 +312,19 @@ export async function POST(request: Request) {
       await sendTelegramMessage(
         chatId,
         [
-          "StockL can retrieve market data for supported stocks.",
+          "📊 STOCKL MARKET RESEARCH",
           "",
-          "Try /analyze NVDA or /analyze AAPL.",
+          "Choose a stock to investigate:",
           "",
-          "Quotes may be delayed or unavailable.",
+          "• /analyze NVDA — NVIDIA",
+          "• /analyze AAPL — Apple",
+          "• /analyze TSLA — Tesla",
+          "• /analyze MSFT — Microsoft",
+          "• /analyze GOOGL — Alphabet",
+          "",
+          "You can also ask a specific market question.",
+          "",
+          "⚠️ Quotes may be delayed or unavailable.",
         ].join("\n")
       );
 
@@ -264,7 +339,7 @@ export async function POST(request: Request) {
       if (!question) {
         await sendTelegramMessage(
           chatId,
-          "Please provide a stock ticker or research question.\nExample: /analyze NVDA"
+          "🔎 Which stock would you like to research?\n\nExample: /analyze NVDA"
         );
 
         return NextResponse.json({ ok: true });
@@ -289,7 +364,14 @@ export async function POST(request: Request) {
 
     await sendTelegramMessage(
       chatId,
-      "📊 StockL is gathering available market data and preparing your research report. Please wait..."
+      [
+        "🔎 STOCKL AI",
+        "",
+        `Preparing research for ${firstName}...`,
+        "Gathering available market data and reviewing the question.",
+        "",
+        "⏳ Please wait.",
+      ].join("\n")
     );
 
     const report = await answerResearchQuestion(
@@ -297,7 +379,10 @@ export async function POST(request: Request) {
       question
     );
 
-    await sendTelegramMessage(chatId, report);
+    await sendTelegramMessage(
+      chatId,
+      formatResearchReport(report)
+    );
   } catch (error) {
     console.error("[StockL Telegram] Request failed:", {
       message:
@@ -309,10 +394,18 @@ export async function POST(request: Request) {
     try {
       await sendTelegramMessage(
         chatId,
-        "StockL couldn't complete that request right now. Please try again shortly."
+        [
+          "⚠️ STOCKL RESEARCH TEMPORARILY UNAVAILABLE",
+          "",
+          "I couldn't complete your request right now.",
+          "Please try again shortly.",
+          "",
+          "If the problem continues, open the StockL website:",
+          STOCKL_URL,
+        ].join("\n")
       );
     } catch {
-      // Delivery may also be unavailable.
+      // The Telegram API may also be unavailable.
     }
   }
 
